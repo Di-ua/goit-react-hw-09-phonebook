@@ -1,48 +1,57 @@
-import React, { Component, Suspense } from 'react';
-import { connect } from 'react-redux';
-import PrivateRoute from './components/PrivateRoute';
-import PublicRoute from './components/PublicRoute/PublicRoute';
-import Title from './shared/Title';
-import Loader from './shared/Loader';
-import Layout from './shared/Layout';
-import Form from './components/Form';
-import ContactsList from './components/ContactsList';
-import Filter from './components/Filter';
-import contactsOperations from './redux/contacts/contactsOperations';
-import contactsSelectors from './redux/contacts/contactsSelectors';
 import './App.css';
-import { Route, Switch } from 'react-router-dom';
-import routes from './routes';
+import { useDispatch } from 'react-redux';
+import { useEffect } from 'react';
+
+import { Suspense, lazy } from 'react';
+import { Switch } from 'react-router-dom';
 import { authOperations } from './redux/auth';
 
-class App extends Component {
-  componentDidMount() {
-    this.props.onGetCurrentUser();
-  }
+import Container from './components/Container/Container';
+import PrivateRoute from './components/PrivateRoute/PrivaeRoute';
+import PublicRoute from './components/PublicRoute/PublicRoute';
+import MenuBar from './components/MenuBar';
+import Footer from './components/Footer';
 
-  render() {
-    return (
-      <Layout>
-        <Suspense fallback={<Loader />}>
+const HomeView = lazy(() => import('./pages/HomeView'));
+const RegisterView = lazy(() => import('./pages/RegisterView'));
+const LoginView = lazy(() => import('./pages/LoginView'));
+const PhonebookView = lazy(() => import('./pages/PhonebookView'));
+
+export default function App() {
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    dispatch(authOperations.getCurrentUser());
+  }, [dispatch]);
+
+  return (
+    <div className="App">
+      <MenuBar />
+      <Container>
+        <Suspense fallback={<p>Loading...</p>}>
           <Switch>
-            {routes.map((route, idx) => {
-              return route.private ? (
-                <PrivateRoute key={idx} {...route} />
-              ) : (
-                <PublicRoute
-                  key={idx}
-                  {...route}
-                  restricted={route.restricted}
-                />
-              );
-            })}
+            <PublicRoute exact path="/" component={HomeView} />
+            <PublicRoute
+              path="/login"
+              restricted
+              redirectTo={'/'}
+              component={LoginView}
+            />
+            <PublicRoute
+              path="/register"
+              restricted
+              redirectTo={'/'}
+              component={RegisterView}
+            />
+            <PrivateRoute
+              path="/contacts"
+              redirectTo={'/login'}
+              component={PhonebookView}
+            />
           </Switch>
         </Suspense>
-      </Layout>
-    );
-  }
+      </Container>
+      <Footer />
+    </div>
+  );
 }
-
-export default connect(null, {
-  onGetCurrentUser: authOperations.getCurrentUser,
-})(App);

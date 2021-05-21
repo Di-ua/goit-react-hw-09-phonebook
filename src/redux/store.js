@@ -1,27 +1,49 @@
 import { configureStore, getDefaultMiddleware } from '@reduxjs/toolkit';
-import { contactReducer, loading } from './contacts/contactsReducer';
-import filter from './filter/filterReducer';
-import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
-import authReducer from './auth/authReducers';
+import logger from 'redux-logger';
+import {
+  persistStore,
+  persistReducer,
+  FLUSH,
+  REHYDRATE,
+  PAUSE,
+  PERSIST,
+  PURGE,
+  REGISTER,
+} from 'redux-persist';
+
+import phonebookReducer from './phonebook/phonebook-reducer';
+import authReducer from './auth/auth-reducer';
+import error from './error/error';
+import loading from './loading/loading';
+
+const middleware = [
+  ...getDefaultMiddleware({
+    serializableCheck: {
+      ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
+    },
+  }),
+  // logger,
+];
 
 const authPersistConfig = {
   key: 'auth',
+  white: ['token'],
   storage,
-  whitelist: ['token'],
 };
 
-const rootReducer = {
-  auth: persistReducer(authPersistConfig, authReducer),
-  contacts: contactReducer,
-  filter,
-  loading,
-};
-
-export const store = configureStore({
-  reducer: rootReducer,
-  middleware: [...getDefaultMiddleware({ serializableCheck: false })],
+const store = configureStore({
+  reducer: {
+    auth: persistReducer(authPersistConfig, authReducer),
+    contacts: phonebookReducer,
+    error: error,
+    loading: loading,
+  },
+  middleware,
+  devTools: process.env.NODE_ENV === 'development',
 });
 
-export const persistor = persistStore(store);
+const persistor = persistStore(store);
+
+export default { store, persistor };
